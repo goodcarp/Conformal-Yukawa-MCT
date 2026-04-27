@@ -1,110 +1,30 @@
-# Conformal Yukawa MCT
+# conformal-yukawa-mct
 
-Mode-coupling theory for a **conformally-coupled Yukawa one-component plasma** --a scalar field φ
-coupled to plasma density through the interaction strength itself, solved for the intermediate
-scattering function F(k,t).
+A custom memory kernel on top of ModeCouplingTheory.jl for the conformally-coupled Yukawa one-component plasma. This is the "tricritical point in Julia" that the earlier phi^4 note pointed at, and it's the code that came out of the plasma-scalarization audits.
 
+The free energy the kernel is built around is
 
----
+    f = f0(n) - eta * n^(4/3) * A(phi)^2 + m^2 phi^2 / 2 + lambda phi^4 / 4
 
-## Why
+with the critical density n_c = (m^2 / (2 eta xi))^(3/4) worked out in the kernel header.
 
-Thirteen days earlier, an [origin note](https://github.com/goodcarp/tricritical-exploration/blob/main/notes/2026-04-14-phi4-free-energy-origin.md)
-recorded a free energy that kept reappearing across unrelated problems:
+## What's here
 
-$$f(n, \phi) = n k_B T\left[\ln(n\Lambda^3) - 1\right] - \eta\, n^{4/3}\left(1 + \xi\phi^2\right) + \tfrac{1}{2}m^2\phi^2 + \tfrac{\lambda}{4}\phi^4$$
+- `ConformalYukawaMCT.jl`: the kernel, structure factor and `solve_conformal_mct`
+- `sk_yukawa_g50_k1.jl`: the raw HNC S(k)/c(k) table at Gamma=50, kappa=1, from a Picard iteration converged to 1e-7
+- `sk_g50_regularized.jl`: the Wertheim-Lebowitz-Percus regularized version, with c_short = c_HNC - c_long so the bare Yukawa long-range part isn't double counted
+- `conformal_mct_env/`: the three run scripts, the pinned Project/Manifest, and the plots
 
-This repository is that equation made to run. The coupling is promoted from $(1 + \xi\phi^2)$ to a
-squared conformal factor:
+## Runs
 
-$$f(n,\phi) = f_0(n) - \eta\, n^{4/3} A^2(\phi) + \tfrac{1}{2}m^2\phi^2 + \tfrac{\lambda}{4}\phi^4,
-\qquad A(\phi) = 1 + \tfrac{1}{2}\xi\phi^2$$
+- `run_task2.jl` is the xi=0 baseline, plus a numerical-health scan
+- `run_runA.jl` sweeps xi in {0, 0.05, 0.10, 0.15}
+- `run_runB.jl` sweeps density n toward n_c at xi=0.1
 
-which reorganizes into a density-dependent Landau form:
+## Read this before trusting Run B
 
-$$f = f_0(n) + \tfrac{1}{2} r(n)\,\phi^2 + \tfrac{1}{4} u(n)\,\phi^4,
-\qquad r(n) = m^2 - 2\eta\xi n^{4/3},
-\qquad u(n) = \lambda - \eta\xi^2 n^{4/3}$$
+Run B's omega_peak comes out of an FFT that assumes uniform dt on a log-spaced grid. It doesn't. So those frequencies are not trustworthy as physical numbers. It's flagged inline and left in, because the rest of Run B is fine and I'd rather keep the honest caveat than quietly drop the run.
 
-Two consequences fall straight out, and they are the reason the tricritical program exists:
+## What's missing
 
-| Quantity | Result |
-|---|---|
-| **Critical density** | $n_c = \left(m^2 / 2\eta\xi\right)^{3/4}$ |
-| **Character of the transition at $n_c$** | second-order if $\lambda > \tfrac{1}{2}\xi m^2$, **first-order otherwise** |
-
-The quartic coefficient $u(n)$ changes sign independently of $r(n)$. Where both vanish together is a
-**tricritical point** — which is what the rest of the research program went on to chase.
-
-## Layout
-
-```
-src/ConformalYukawaMCT.jl     custom memory kernel plugging into ModeCouplingTheory.jl
-src/PlasmaMCTKernel.jl        standalone regularized Yukawa-OCP kernel (no solver dependency)
-structure-factor/             HNC / WLP-regularized S(k) inputs at Γ=50, κ=1
-runs/                         the sweeps: task2 baseline, run A (ξ), run B (density)
-examples/ test/ data/         worked example, unit tests, HNC input-table spec
-plots/                        six result figures
-```
-
-### Two kernels
-
-- **`ConformalYukawaMCT.jl`** is the research kernel — the φ⁴-coupled version, built against
-  [ModeCouplingTheory.jl](https://github.com/IlianPihlajamaa/ModeCouplingTheory.jl)
-  (Pihlajamaa et al., JOSS 2023, [arXiv:2305.01365](https://arxiv.org/abs/2305.01365)).
-- **`PlasmaMCTKernel.jl`** is the clean-room version: the regularized 3D Yukawa-OCP memory kernel
-  with the full isotropic angular reduction, no field coupling, no solver dependency, unit-tested.
-  It exists to check the research kernel's plasma sector in isolation.
-
-The memory kernel, with the angular integral reduced:
-
-$$K(k,t) = \frac{n}{8\pi^2}\int\! dq\, q^2 \int_{-1}^{1}\!\! d\mu\;
-\Big[q\mu\, c_s(q) + (k - q\mu)\, c_s(p)\Big]^2 F(q,t) F(p,t),
-\qquad p = \sqrt{k^2 + q^2 - 2kq\mu}$$
-
-evaluated on 64 Gauss-Legendre angular nodes. The vertex uses **only** the short-range
-Wertheim–Lebowitz–Percus regularized direct correlation function — the HNC direct correlation w/
-bare long-range Yukawa Fourier component removed. Using the unregularized $c(q)$ here is the
-standard way to get a divergent vertex in a charged system, so it ends up enforced rather than assumed.
-
-## The runs
-
-| Run | Sweep | Figures |
-|---|---|---|
-| **task2** | ξ = 0 baseline — no conformal coupling, pure Yukawa OCP | `task2_F_raw.png`, `task2_F_normalized.png` |
-| **run A** | ξ ∈ {0, 0.05, 0.10, 0.15} at fixed n, m²=10, λ=2 | `runA_F_kpeak_xi.png`, `runA_F_kmin_xi.png` |
-| **run B** | density sweep across $n_c$ | `runB_F_kpeak_n.png`, `runB_F_kmin_n.png` |
-
-All at Γ = 50, κ = 1. F(k,t) is sampled at the structure-factor peak and at the smallest k on the
-grid — the two places where a coupling-driven change in relaxation should show up first.
-
-## Running it
-
-```bash
-julia --project=. -e 'using Pkg; Pkg.instantiate()'
-julia --project=. runs/run_task2.jl
-julia --project=. runs/run_runA.jl
-julia --project=. runs/run_runB.jl
-```
-
-Tests for the standalone kernel:
-
-```bash
-julia --project=. test/runtests.jl
-```
-
-`Project.toml` / `Manifest.toml` pin the environment as it was on 2026-04-27. Run A and Run B need
-`ModeCouplingTheory` and `Plots`; `PlasmaMCTKernel.jl` needs only `LinearAlgebra`.
-
-To use real HNC data rather than the built-in approximation, drop a `k,S,c_short` table into `data/`
-per [`data/README.md`](data/README.md) — `c_short` must be WLP-regularized, not the full HNC $c(k)$.
-
-## Status
-
-Exploratory af. Literature search. Produced figures; nunvalidated against an
-independent MCT implementation or sim (see threshold data for phase collapse toy sims and no access to hydrodynamic sim clusters as would need a supercomputer from a national lab. HNC inputs are approximated rather than tabulated. Treat it as transition characterization=analytic (it follows from the Landau form) and
-dynamics=suggestive.
-
----
-
-*Private repository. Provenance for the tricritical research program.*
+The HNC tables were generated by an hnc_v2.py (Picard iteration, 256 r-points) that I never saved to disk. So the tables are here but the thing that made them isn't. If you need to regenerate them you'll have to rebuild that first.
