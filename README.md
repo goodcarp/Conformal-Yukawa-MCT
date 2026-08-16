@@ -1,14 +1,13 @@
 # Conformal Yukawa MCT
 
-Mode-coupling theory for a **conformally-coupled Yukawa one-component plasma** — a scalar field φ
+Mode-coupling theory for a **conformally-coupled Yukawa one-component plasma** --a scalar field φ
 coupled to plasma density through the interaction strength itself, solved for the intermediate
 scattering function F(k,t).
 
-Julia. One day of work, 2026-04-27.
 
 ---
 
-## Why this exists
+## Why
 
 Thirteen days earlier, an [origin note](https://github.com/goodcarp/tricritical-exploration/blob/main/notes/2026-04-14-phi4-free-energy-origin.md)
 recorded a free energy that kept reappearing across unrelated problems:
@@ -48,7 +47,7 @@ examples/ test/ data/         worked example, unit tests, HNC input-table spec
 plots/                        six result figures
 ```
 
-### Two kernels, deliberately
+### Two kernels
 
 - **`ConformalYukawaMCT.jl`** is the research kernel — the φ⁴-coupled version, built against
   [ModeCouplingTheory.jl](https://github.com/IlianPihlajamaa/ModeCouplingTheory.jl)
@@ -64,9 +63,9 @@ $$K(k,t) = \frac{n}{8\pi^2}\int\! dq\, q^2 \int_{-1}^{1}\!\! d\mu\;
 \qquad p = \sqrt{k^2 + q^2 - 2kq\mu}$$
 
 evaluated on 64 Gauss-Legendre angular nodes. The vertex uses **only** the short-range
-Wertheim–Lebowitz–Percus regularized direct correlation function — the HNC direct correlation with
-the bare long-range Yukawa Fourier component removed. Using the unregularized $c(q)$ here is the
-standard way to get a divergent vertex in a charged system, so it is enforced rather than assumed.
+Wertheim–Lebowitz–Percus regularized direct correlation function — the HNC direct correlation w/
+bare long-range Yukawa Fourier component removed. Using the unregularized $c(q)$ here is the
+standard way to get a divergent vertex in a charged system, so it ends up enforced rather than assumed.
 
 ## The runs
 
@@ -102,10 +101,9 @@ per [`data/README.md`](data/README.md) — `c_short` must be WLP-regularized, no
 
 ## Status
 
-Exploratory. The sweeps ran and produced figures; nothing here has been validated against an
-independent MCT implementation or against simulation, and the HNC inputs are approximated rather than
-tabulated. Treat the transition characterization as analytic (it follows from the Landau form) and
-the dynamics as suggestive.
+Exploratory af. Literature search. Produced figures; nunvalidated against an
+independent MCT implementation or sim (see threshold data for phase collapse toy sims and no access to hydrodynamic sim clusters as would need a supercomputer from a national lab. HNC inputs are approximated rather than tabulated. Treat it as transition characterization=analytic (it follows from the Landau form) and
+dynamics=suggestive.
 
 ---
 
