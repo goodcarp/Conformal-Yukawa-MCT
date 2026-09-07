@@ -1,8 +1,8 @@
 # conformal-yukawa-mct
 
-A custom memory kernel on top of ModeCouplingTheory.jl for the conformally-coupled Yukawa one-component plasma. This is the "tricritical point in Julia" that the earlier phi^4 note pointed at, and it's the code that came out of the plasma-scalarization audits.
+Custom memory kernel on top of ModeCouplingTheory.jl for conformally-coupled Yukawa one-component plasma. Tricritical point in Julia that earlier phi^4 note pointed at; code came from plasma-scalarization audits.
 
-The free energy the kernel is built around is
+The free energy the kernel is built around
 
     f = f0(n) - eta * n^(4/3) * A(phi)^2 + m^2 phi^2 / 2 + lambda phi^4 / 4
 
@@ -21,7 +21,7 @@ with the critical density n_c = (m^2 / (2 eta xi))^(3/4) worked out in the kerne
 - `run_runA.jl` sweeps xi in {0, 0.05, 0.10, 0.15}
 - `run_runB.jl` sweeps density n toward n_c at xi=0.1
 
-## Read this before trusting Run B
+## Read this about Run B
 
 Run B's omega_peak comes out of an FFT that assumes uniform dt on a log-spaced grid. It doesn't. So those frequencies are not trustworthy as physical numbers. It's flagged inline and left in, because the rest of Run B is fine and I'd rather keep the honest caveat than quietly drop the run.
 
